@@ -1,0 +1,203 @@
+#+title: MiniLisp Quick Reference Sheet
+
+* Tokens
+|--------+---------+----------------+------------------------|
+| Symbol | Unicode | Name           | Example                |
+|--------+---------+----------------+------------------------|
+| +      | U+002B  | Addition       | ~(+ 2 3) → 5~          |
+| −      | U+2212  | Subtraction    | ~(− 5 2) → 3~          |
+| ×      | U+00D7  | Multiplication | ~(× 3 4) → 12~         |
+| =      | U+003D  | Equality       | ~(= 5 5) → 1~          |
+| ?      | U+003F  | Conditional    | ~(? 1 10 20) → 10~     |
+| λ      | U+03BB  | Lambda         | ~(λ x (+ x 1))~        |
+| ≜      | U+225C  | Let binding    | ~(≜ x 5 (+ x x)) → 10~ |
+| (      | U+0028  | Left paren     |                        |
+| )      | U+0029  | Right paren    |                        |
+|--------+---------+----------------+------------------------|
+
+* Core Grammar (LL(1))
+#+begin_src
+program    ::= expr
+expr       ::= number | identifier | '(' paren-expr ')'
+paren-expr ::= '+' expr expr | '−' expr expr | '×' expr expr
+             | '=' expr expr       | '?' expr expr expr       |
+             | 'λ' identifier expr | '≜' identifier expr expr |
+             | expr expr*          |                          |
+#+end_src
+
+* Core Examples
+#+begin_src
+42                                   // Number literal
+(+ 2 3)                             // Addition: 5
+(× (+ 1 2) (− 7 3))                 // Nested arithmetic: 12
+(? (= 1 1) 10 20)                   // Conditional: 10
+((λ x (+ x 1)) 5)                   // Lambda application: 6
+(≜ x 10 (+ x x))                    // Let binding: 20
+#+end_src
+
+* Extension 1: Manual Recursion (Weeks 5-6)
+No new tokens
+Students manually define Y combinator as needed.
+
+** Y Combinator Definition
+#+begin_src
+(≜ Y (λ f ((λ x (f (λ v ((x x) v)))) (λ x (f (λ v ((x x) v))))))
+  // ... use Y for recursive functions
+)
+#+end_src
+
+** Examples
+#+begin_src
+// Factorial (verbose, demonstrates pain point)
+(≜ Y (λ f ((λ x (f (λ v ((x x) v)))) (λ x (f (λ v ((x x) v))))))
+  (≜ factorial (Y (λ f (λ n (? (= n 0) 1 (× n (f (− n 1)))))))
+    (factorial 5)))                  // Result: 120
+#+end_src
+
+* Extension 2: Built-in Recursion (Weeks 7-8)
+** New Token
+|--------+---------+-------------------------------+---------|
+| Symbol | Unicode | Name                          | Example |
+|--------+---------+-------------------------------+---------|
+| Ω      | U+03A9  | Turing fixed-point combinator | ~(Ω f)~ |
+|--------+---------+-------------------------------+---------|
+
+** Extended Grammar
+#+begin_src
+paren-expr ::= ... (all previous)
+             | 'Ω' expr
+Examples
+// Factorial (clean!)
+(≜ factorial
+  (Ω (λ f (λ n (? (= n 0) 1 (× n (f (− n 1)))))))
+  (factorial 5))                     // Result: 120
+// Fibonacci
+(≜ fib
+  (Ω (λ f (λ n (? (= n 0) 0
+                 (? (= n 1) 1
+                    (+ (f (− n 1)) (f (− n 2))))))))
+  (fib 10))                          // Result: 55
+#+end_src
+
+* Extension 3: Data Structures (Weeks 9-10)
+** New Tokens
+
+|--------+---------+-------------------------+-------------------|
+| Symbol | Unicode | Name                    | Example           |
+|--------+---------+-------------------------+-------------------|
+| ∷      | U+2237  | Cons (pair constructor) | ~(∷ 1 2)~         |
+| ←      | U+2190  | Car (first element)     | ~(← (∷ 1 2)) → 1~ |
+| →      | U+2192  | Cdr (second element)    | ~(→ (∷ 1 2)) → 2~ |
+| ∅      | U+2205  | Nil (empty list)        | ~∅~               |
+| ∘      | U+2218  | Null check              | ~(∘ ∅) → 1~       |
+|--------+---------+-------------------------+-------------------|
+
+** Extended Grammar
+#+begin_src
+expr ::= ... (all previous)
+       | '∅'                   |
+       | '(' '∷' expr expr ')' |
+       | '(' '←' expr ')'      |
+       | '(' '→' expr ')'      |
+       | '(' '∘' expr ')'      |
+#+end_src
+
+** Examples
+#+begin_src
+// List construction
+(∷ 1 (∷ 2 (∷ 3 ∅)))                // List [1, 2, 3]
+// List operations
+(← (∷ 42 100))                       // First: 42
+(→ (∷ 42 100))                       // Second: 100
+(∘ ∅)                                // Is empty?: 1
+(∘ (∷ 1 ∅))                          // Is empty?: 0
+// List length function
+(≜ length
+  (Ω (λ f (λ lst (? (∘ lst) 0 (+ 1 (f (→ lst)))))))
+  (length (∷ 1 (∷ 2 (∷ 3 ∅)))))     // Result: 3
+#+end_src
+
+* Extension 4: Pattern Matching (Weeks 11-12)
+** New Tokens
+|--------+---------+----------+---------------------------------------|
+| Symbol | Unicode | Name     | Example                               |
+|--------+---------+----------+---------------------------------------|
+| ⊢      | U+22A2  | Match    | ~(⊢ expr (pattern body) ...)~         |
+| \under      | U+005F  | Wildcard | ~_~ matches anything                 |
+| \vert      | U+2223  | Pipe     | (unused in grammar)	For documentation |
+|--------+---------+----------+---------------------------------------|
+
+** Extended Grammar
+#+begin_src
+expr ::= ... (all previous)
+       | '(' '⊢' expr pattern-clause+ ')'
+pattern-clause ::= '(' pattern expr ')'
+pattern ::= number | identifier | '_' | '∅'
+          | '(' '∷' pattern pattern ')'
+#+end_src
+
+** Examples
+#+begin_src
+// Pattern matching on lists
+(≜ first-or-default
+  (λ lst (⊢ lst
+    (∅ 0)
+    ((∷ x _) x)))
+  (first-or-default (∷ 42 ∅)))       // Result: 42
+// List sum with pattern matching
+(≜ sum
+  (Ω (λ f (λ lst (⊢ lst
+    (∅ 0)
+    ((∷ x xs) (+ x (f xs)))))))
+  (sum (∷ 1 (∷ 2 (∷ 3 ∅)))))        // Result: 6
+#+end_src
+
+* Extension 5: Advanced Features (Final Weeks)
+** New Tokens
+|--------+---------+--------------+---------------|
+| Symbol | Unicode | Name         | Example       |
+|--------+---------+--------------+---------------|
+| ‹      | U+2039  | Less than    | ~(‹ 2 3) → 1~ |
+| ›      | U+203A  | Greater than | ~(› 3 2) → 1~ |
+| ∧      | U+2227  | Logical and  | ~(∧ 1 1) → 1~ |
+| ∨      | U+2228  | Logical or   | ~(∨ 0 1) → 1~ |
+| ¬      | U+00AC  | Logical not  | ~(¬ 0) → 1~   |
+|--------+---------+--------------+---------------|
+
+** Examples
+#+begin_src
+// Complex logic
+(∧ (› 5 3) (‹ 2 4))                 // (5>3) AND (2<4): 1
+(∨ (= 1 0) (› 10 5))                // (1=0) OR (10>5): 1
+(¬ (= 5 3))                         // NOT (5=3): 1
+#+end_src
+
+** Common Teaching Points
+*** Truth Values
+False: 0
+True: Any non-zero number (conventionally 1)
+
+*** Subtraction Behavior
+Natural number arithmetic: ~(− 3 5) → 0~ (not negative)
+
+*** Scoping Rules
+Lexical scoping: Variables bound where functions are defined
+Closures: Functions capture their defining environment
+Local binding only: ≜ creates local scope, no globals
+
+*** Error Patterns to Watch For
+Unmatched parentheses
+Wrong number of arguments to operators
+Undefined variables
+Function application of non-functions
+
+*** Evaluation Strategy
+Call-by-value: Arguments evaluated before function application
+Left-to-right: Expression evaluation order
+
+** Quick Syntax Reminders
+All operations are prefix: ~(+ 2 3)~ not 2 + 3
+All expressions are fully parenthesized: no precedence rules
+Application is left-associative: ~(f a b c)~ = ~(((f a) b) c)~
+Lambda bodies extend as far right as possible
+Let bindings have limited scope: ~(≜ x val body)~ - x only visible in body
