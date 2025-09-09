@@ -1,12 +1,25 @@
-#lang racket/base
+#lang racket
 
-(module+ test
-  (require rackunit))
+(define (parse program-string)
+  (let loop ([program (list)]
+             [stack (list 'S '$)]
+             [chars (string->list program-string)])
+    (let ([stack-top (car stack)]
+          [cur-char (car chars)])
+      (if (eq? cur-char stack-top)
+          (loop program (cdr stack) (cdr chars))
+
+          (match (list cur-char stack-top)
+            [(list #\( 'S) (loop program (append (list #\( 'paren-expr #\)) stack) (cdr chars))]
+            [(list #\space _) (loop program stack)]
+            [(list #\( 'expr) (loop program (append (list #\( 'paren-expr #\)) stack) (cdr chars))]
+            [(list)])))))
 
 (module+ test
   ;; Any code in this `test` submodule runs when this file is run using DrRacket
   ;; or with `raco test`. The code here does not run when this file is
   ;; required by another module.
+  (require rackunit)
 
   (check-equal? (+ 2 2) 4))
 
