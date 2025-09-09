@@ -1,3 +1,5 @@
 #+title: minilisp
 
 An "aggressively LL(1) parseable" LISP.
+
+Specification is [[./spec.org][here]].
