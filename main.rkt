@@ -55,9 +55,6 @@
               (loop (cons (identifier-token token-buf) tokens) (list) null (cdr chars))])]))))
 
 (module+ test
-  ;; Any code in this `test` submodule runs when this file is run using DrRacket
-  ;; or with `raco test`. The code here does not run when this file is
-  ;; required by another module.
   (require rackunit)
 
   (check-equal? (tokenise "(+ 123 456)") (list #\( #\+ 123 456 #\)))
