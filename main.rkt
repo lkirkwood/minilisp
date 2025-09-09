@@ -22,7 +22,7 @@
 (define (tokenise program-string)
   (let loop ([tokens (list)]
              [token-buf (list)]
-             [buffered-type null]
+             [buffered-type 'none]
              [chars (string->list program-string)])
     (if (null? chars)
         (reverse tokens)
@@ -30,29 +30,32 @@
         (match (car chars)
           [(? (curry set-member? TERMINALS) char)
            (match buffered-type
-             [(? null?) (loop (cons char tokens) (list) null (cdr chars))]
+             ['none (loop (cons char tokens) (list) 'none (cdr chars))]
              ['number
-              (loop (cons char (cons (number-token token-buf) tokens)) (list) null (cdr chars))]
+              (loop (cons char (cons (number-token token-buf) tokens)) (list) 'none (cdr chars))]
              ['identifier
-              (loop (cons char (cons (identifier-token token-buf) tokens)) (list) null (cdr chars))])]
+              (loop (cons char (cons (identifier-token token-buf) tokens))
+                    (list)
+                    'none
+                    (cdr chars))])]
 
           [(? char-numeric? char)
-           (if (or (eq? buffered-type null) (eq? buffered-type 'number))
+           (if (or (eq? buffered-type 'none) (eq? buffered-type 'number))
                (loop tokens (cons char token-buf) 'number (cdr chars))
                (raise (format "Found number in the middle of a ~a token" buffered-type)))]
 
           [(? char-alphabetic? char)
-           (if (or (eq? buffered-type null) (eq? buffered-type 'identifier))
+           (if (or (eq? buffered-type 'none) (eq? buffered-type 'identifier))
                (loop tokens (cons char token-buf) 'identifier (cdr chars))
                (raise (format "Found alphanumeric character in the middle of a ~a token"
                               buffered-type)))]
 
           [#\space
            (match buffered-type
-             [(? null?) (loop tokens (list) null (cdr chars))]
-             ['number (loop (cons (number-token token-buf) tokens) (list) null (cdr chars))]
+             ['none (loop tokens (list) 'none (cdr chars))]
+             ['number (loop (cons (number-token token-buf) tokens) (list) 'none (cdr chars))]
              ['identifier
-              (loop (cons (identifier-token token-buf) tokens) (list) null (cdr chars))])]))))
+              (loop (cons (identifier-token token-buf) tokens) (list) 'none (cdr chars))])]))))
 
 (module+ test
   (require rackunit)
