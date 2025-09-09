@@ -27,7 +27,7 @@ paren-expr ::= '+' expr expr | '−' expr expr | '×' expr expr
 
 * Core Examples
 #+begin_src
-42                                   // Number literal
+42                                  // Number literal
 (+ 2 3)                             // Addition: 5
 (× (+ 1 2) (− 7 3))                 // Nested arithmetic: 12
 (? (= 1 1) 10 20)                   // Conditional: 10
