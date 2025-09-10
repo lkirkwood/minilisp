@@ -66,7 +66,10 @@ Students manually define Y combinator as needed.
 #+begin_src
 paren-expr ::= ... (all previous)
              | 'Ω' expr
-Examples
+#+end_src
+
+** Examples
+#+begin_src
 // Factorial (clean!)
 (≜ factorial
   (Ω (λ f (λ n (? (= n 0) 1 (× n (f (− n 1)))))))
