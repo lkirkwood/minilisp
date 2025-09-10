@@ -18,7 +18,10 @@
              [buffered-type 'none]
              [chars (string->list program-string)])
     (if (null? chars)
-        (reverse tokens)
+        (match buffered-type
+          ['none (reverse tokens)]
+          ['number (reverse (cons (number-token token-buf) tokens))]
+          ['identifier (reverse (cons (identifier-token token-buf) tokens))])
 
         (let ([char (car chars)])
           (match char
@@ -44,7 +47,7 @@
                  (raise (format "Found alphanumeric character in the middle of a ~a token"
                                 buffered-type)))]
 
-            [#\space
+            [(? char-whitespace?)
              (match buffered-type
                ['none (loop tokens (list) 'none (cdr chars))]
                ['number (loop (cons (number-token token-buf) tokens) (list) 'none (cdr chars))]
@@ -62,24 +65,38 @@
            [symbol (car stack)]
            [stack (cdr stack)])
        (match (list token symbol)
-         ;; recursively parse paren-expr
          [(list #\( 'expr)
-          (let*-values ([(stack) (cons 'paren-expr (cons #\) stack))]
-                        [(paren-expr tokens stack) (parse-expr (list) tokens stack)])
-            (parse-expr (cons paren-expr expr) tokens stack))]
+          (let*-values ([(stack) (cons 'expr (cons #\) stack))]
+                        [(sub-expr tokens stack) (parse-expr (list) tokens stack)])
+            (parse-expr (cons sub-expr expr) tokens stack))]
 
-         ;; terminals
          [(list (? number? number) 'expr) (parse-expr (cons number expr) tokens stack)]
-         [(list (? string? identifier) (or 'expr 'identifier))
+         [(list (? string? identifier) (or 'identifier 'expr))
           (parse-expr (cons (string->symbol identifier) expr) tokens stack)]
 
-         [(list #\+ 'paren-expr) (parse-expr (cons + expr) tokens (cons 'expr (cons 'expr stack)))]
-         [(list #\− 'paren-expr) (parse-expr (cons - expr) tokens (cons 'expr (cons 'expr stack)))]
-         [(list #\× 'paren-expr) (parse-expr (cons * expr) tokens (cons 'expr (cons 'expr stack)))]
-         [(list #\= 'paren-expr)
-          (parse-expr (cons equal? expr) tokens (cons 'expr (cons 'expr stack)))]
+         [(list #\+ 'expr) (parse-expr (cons + expr) tokens (cons 'expr (cons 'expr stack)))]
+         [(list #\− 'expr) (parse-expr (cons - expr) tokens (cons 'expr (cons 'expr stack)))]
+         [(list #\× 'expr) (parse-expr (cons * expr) tokens (cons 'expr (cons 'expr stack)))]
+         [(list #\= 'expr) (parse-expr (cons equal? expr) tokens (cons 'expr (cons 'expr stack)))]
 
-         [(list #\) #\)) (values (reverse expr) tokens stack)]))]))
+         [(list #\? 'expr) (parse-expr (cons 'if expr) tokens (cons 'expr (cons 'expr stack)))]
+
+         [(list #\λ 'expr)
+          (let*-values ([(expr) (cons 'lambda expr)]
+                        [(stack) (cons 'identifier (cons 'end-form (cons 'expr stack)))]
+                        [(binding-form tokens stack) (parse-expr (list) tokens stack)])
+            (parse-expr (cons binding-form expr) tokens stack))]
+
+         [(list #\≜ 'expr)
+          (let*-values ([(expr) (cons 'let expr)]
+                        [(stack) (cons 'identifier (cons 'expr (cons 'end-form (cons 'expr stack))))]
+                        [(binding-form tokens stack) (parse-expr (list) tokens stack)])
+            (parse-expr (cons (list binding-form) expr) tokens stack))]
+
+         [(list _ 'end-form) (values (reverse expr) (cons token tokens) stack)]
+
+         [(list #\) #\)) (values (reverse expr) tokens stack)]
+         [(list _ #\)) (parse-expr expr (cons token tokens) (cons 'expr (cons #\) stack)))]))]))
 
 (define (parse program-string)
   (parse-expr (list) (tokenise program-string) (list 'expr '$)))
@@ -94,11 +111,23 @@
   (check-equal? (tokenise "(+ (× 1 42) (− 42 0))")
                 (list #\( #\+ #\( #\× 1 42 #\) #\( #\− 42 0 #\) #\)))
   (check-equal? (tokenise "(≜ myident (× 42 100))") (list #\( #\≜ "myident" #\( #\× 42 100 #\) #\)))
+  (check-equal? (tokenise "42") (list 42))
 
+  (check-equal? (run "42") 42)
   (check-equal? (run "(+ 1 42)") 43)
+  (check-equal? (run "(+ 1 23 42)") 66)
   (check-equal? (run "(− 123 23)") 100)
   (check-equal? (run "(× 5 25)") 125)
-  (check-equal? (run "(= 42 1)") #f))
+  (check-equal? (run "(× (+ 1 2) (− 7 3))") 12)
+  (check-equal? (run "(= 42 1)") #f)
+  (check-equal? (run "((λ x (+ x 1)) 5)") 6)
+  (check-equal? (run "(≜ x 10 (+ x x))") 20)
+  (check-equal?
+   (run
+    "(≜ Y (λ f ((λ x (f (λ v ((x x) v)))) (λ x (f (λ v ((x x) v))))))
+      (≜ factorial (Y (λ f (λ n (? (= n 0) 1 (× n (f (− n 1)))))))
+          (factorial 5)))")
+   120))
 
 (module+ main
   ;; (Optional) main submodule. Put code here if you need it to be executed when
