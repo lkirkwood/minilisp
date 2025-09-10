@@ -51,41 +51,38 @@
                ['identifier
                 (loop (cons (identifier-token token-buf) tokens) (list) 'none (cdr chars))])])))))
 
-(define (parse-paren-expr tokens stack)
-  (let loop ([paren-expr (list)]
-             [tokens tokens]
-             [stack stack])
-    (cond
-      [(and (null? tokens) (eq? '$ (car stack))) (car paren-expr)]
-      [(null? tokens) (raise "The program being parsed ended unexpectedly.")]
+(define (parse-expr expr tokens stack)
+  (cond
+    [(and (null? tokens) (eq? '$ (car stack))) (car expr)]
+    [(null? tokens) (raise "The program being parsed ended unexpectedly.")]
 
-      [else
-       (let ([token (car tokens)]
-             [tokens (cdr tokens)]
-             [symbol (car stack)]
-             [stack (cdr stack)])
-         (match (list token symbol)
-           ;; recursively parse paren-expr
-           [(list #\( 'expr)
-            (let*-values ([(stack) (cons 'paren-expr (cons #\) stack))]
-                          [(sub-paren-expr tokens stack) (parse-paren-expr tokens stack)])
-              (loop (cons sub-paren-expr paren-expr) tokens stack))]
+    [else
+     (let ([token (car tokens)]
+           [tokens (cdr tokens)]
+           [symbol (car stack)]
+           [stack (cdr stack)])
+       (match (list token symbol)
+         ;; recursively parse paren-expr
+         [(list #\( 'expr)
+          (let*-values ([(stack) (cons 'paren-expr (cons #\) stack))]
+                        [(paren-expr tokens stack) (parse-expr (list) tokens stack)])
+            (parse-expr (cons paren-expr expr) tokens stack))]
 
-           ;; terminals
-           [(list (? number? number) 'expr) (loop (cons number paren-expr) tokens stack)]
-           [(list (? string? identifier) 'expr)
-            (loop (cons (string->symbol identifier) paren-expr) tokens stack)]
+         ;; terminals
+         [(list (? number? number) 'expr) (parse-expr (cons number expr) tokens stack)]
+         [(list (? string? identifier) (or 'expr 'identifier))
+          (parse-expr (cons (string->symbol identifier) expr) tokens stack)]
 
-           [(list #\+ 'paren-expr) (loop (cons + paren-expr) tokens (cons 'expr (cons 'expr stack)))]
-           [(list #\− 'paren-expr) (loop (cons - paren-expr) tokens (cons 'expr (cons 'expr stack)))]
-           [(list #\× 'paren-expr) (loop (cons * paren-expr) tokens (cons 'expr (cons 'expr stack)))]
-           [(list #\= 'paren-expr)
-            (loop (cons equal? paren-expr) tokens (cons 'expr (cons 'expr stack)))]
+         [(list #\+ 'paren-expr) (parse-expr (cons + expr) tokens (cons 'expr (cons 'expr stack)))]
+         [(list #\− 'paren-expr) (parse-expr (cons - expr) tokens (cons 'expr (cons 'expr stack)))]
+         [(list #\× 'paren-expr) (parse-expr (cons * expr) tokens (cons 'expr (cons 'expr stack)))]
+         [(list #\= 'paren-expr)
+          (parse-expr (cons equal? expr) tokens (cons 'expr (cons 'expr stack)))]
 
-           [(list #\) #\)) (values (reverse paren-expr) tokens stack)]))])))
+         [(list #\) #\)) (values (reverse expr) tokens stack)]))]))
 
 (define (parse program-string)
-  (parse-paren-expr (tokenise program-string) (list 'expr '$)))
+  (parse-expr (list) (tokenise program-string) (list 'expr '$)))
 
 (define (run program-string)
   (eval (parse program-string) (make-base-namespace)))
