@@ -62,6 +62,9 @@
 (define (turing-combinator f)
   ((lambda (x) (x x)) (lambda (g) (f (lambda (arg) ((g g) arg))))))
 
+(define (push stack . elements)
+  (append elements stack))
+
 (define (parse-expr expr tokens stack)
   (cond
     [(and (null? tokens) (eq? '$ (car stack))) (car expr)]
@@ -78,47 +81,45 @@
                         [(sub-expr tokens stack) (parse-expr (list) tokens stack)])
             (parse-expr (cons sub-expr expr) tokens stack))]
 
-         [(list (? number? number) 'expr) (parse-expr (cons number expr) tokens stack)]
-         [(list (? string? identifier) (or 'identifier 'expr))
+         [(list (? number? number) (or 'pattern 'expr)) (parse-expr (cons number expr) tokens stack)]
+         [(list (? string? identifier) (or 'pattern 'identifier 'expr))
           (parse-expr (cons (string->symbol identifier) expr) tokens stack)]
 
-         [(list #\+ 'paren-expr) (parse-expr (cons + expr) tokens (cons 'expr (cons 'expr stack)))]
-         [(list #\− 'paren-expr) (parse-expr (cons - expr) tokens (cons 'expr (cons 'expr stack)))]
-         [(list #\× 'paren-expr) (parse-expr (cons * expr) tokens (cons 'expr (cons 'expr stack)))]
-         [(list #\= 'paren-expr)
-          (parse-expr (cons equal? expr) tokens (cons 'expr (cons 'expr stack)))]
+         [(list #\+ 'paren-expr) (parse-expr (cons + expr) tokens (push stack 'expr 'expr))]
+         [(list #\− 'paren-expr) (parse-expr (cons - expr) tokens (push stack 'expr 'expr))]
+         [(list #\× 'paren-expr) (parse-expr (cons * expr) tokens (push stack 'expr 'expr))]
+         [(list #\= 'paren-expr) (parse-expr (cons equal? expr) tokens (push stack 'expr 'expr))]
 
-         [(list #\? 'paren-expr) (parse-expr (cons 'if expr) tokens (cons 'expr (cons 'expr stack)))]
+         [(list #\? 'paren-expr) (parse-expr (cons 'if expr) tokens (push stack 'expr 'expr))]
 
          [(list #\λ 'paren-expr)
           (let*-values ([(expr) (cons 'lambda expr)]
-                        [(stack) (cons 'identifier (cons 'end-form (cons 'expr stack)))]
+                        [(stack) (push stack 'identifier 'end-form 'expr)]
                         [(binding-form tokens stack) (parse-expr (list) tokens stack)])
             (parse-expr (cons binding-form expr) tokens stack))]
 
          [(list #\≜ 'paren-expr)
           (let*-values ([(expr) (cons 'let expr)]
-                        [(stack) (cons 'identifier (cons 'expr (cons 'end-form (cons 'expr stack))))]
+                        [(stack) (push stack 'identifier 'expr 'end-form 'expr)]
                         [(binding-form tokens stack) (parse-expr (list) tokens stack)])
             (parse-expr (cons (list binding-form) expr) tokens stack))]
 
          [(list #\Ω 'paren-expr)
-          (parse-expr (cons 'turing-combinator expr) tokens (cons 'expr stack))]
+          (parse-expr (cons 'turing-combinator expr) tokens (push stack 'expr))]
 
-         [(list #\∷ 'paren-expr)
-          (parse-expr (cons 'cons expr) tokens (cons 'expr (cons 'expr stack)))]
-         [(list #\← 'paren-expr) (parse-expr (cons 'car expr) tokens (cons 'expr stack))]
-         [(list #\→ 'paren-expr) (parse-expr (cons 'cdr expr) tokens (cons 'expr stack))]
+         [(list #\∷ 'paren-expr) (parse-expr (cons 'cons expr) tokens (push stack 'expr 'expr))]
+         [(list #\← 'paren-expr) (parse-expr (cons 'car expr) tokens (push stack 'expr))]
+         [(list #\→ 'paren-expr) (parse-expr (cons 'cdr expr) tokens (push stack 'expr))]
 
          [(list #\∅ 'expr) (parse-expr (cons 'null expr) tokens stack)]
-         [(list #\∘ 'paren-expr) (parse-expr (cons 'null? expr) tokens (cons 'expr stack))]
+         [(list #\∘ 'paren-expr) (parse-expr (cons 'null? expr) tokens (push stack 'expr))]
 
-         [(list _ 'paren-expr) (parse-expr expr (cons token tokens) (cons 'expr stack))]
+         [(list _ 'paren-expr) (parse-expr expr (cons token tokens) (push stack 'expr))]
 
          [(list _ 'end-form) (values (reverse expr) (cons token tokens) stack)]
 
          [(list #\) #\)) (values (reverse expr) tokens stack)]
-         [(list _ #\)) (parse-expr expr (cons token tokens) (cons 'expr (cons #\) stack)))]
+         [(list _ #\)) (parse-expr expr (cons token tokens) (push stack 'expr #\)))]
 
          [else (error (format "Found \"~a\" when looking for a \"~a\"" token symbol))]))]))
 
