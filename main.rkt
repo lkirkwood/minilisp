@@ -71,7 +71,7 @@
            [stack (cdr stack)])
        (match (list token symbol)
          [(list #\( 'expr)
-          (let*-values ([(stack) (cons 'expr (cons #\) stack))]
+          (let*-values ([(stack) (cons 'paren-expr (cons #\) stack))]
                         [(sub-expr tokens stack) (parse-expr (list) tokens stack)])
             (parse-expr (cons sub-expr expr) tokens stack))]
 
@@ -79,24 +79,27 @@
          [(list (? string? identifier) (or 'identifier 'expr))
           (parse-expr (cons (string->symbol identifier) expr) tokens stack)]
 
-         [(list #\+ 'expr) (parse-expr (cons + expr) tokens (cons 'expr (cons 'expr stack)))]
-         [(list #\− 'expr) (parse-expr (cons - expr) tokens (cons 'expr (cons 'expr stack)))]
-         [(list #\× 'expr) (parse-expr (cons * expr) tokens (cons 'expr (cons 'expr stack)))]
-         [(list #\= 'expr) (parse-expr (cons equal? expr) tokens (cons 'expr (cons 'expr stack)))]
+         [(list #\+ 'paren-expr) (parse-expr (cons + expr) tokens (cons 'expr (cons 'expr stack)))]
+         [(list #\− 'paren-expr) (parse-expr (cons - expr) tokens (cons 'expr (cons 'expr stack)))]
+         [(list #\× 'paren-expr) (parse-expr (cons * expr) tokens (cons 'expr (cons 'expr stack)))]
+         [(list #\= 'paren-expr)
+          (parse-expr (cons equal? expr) tokens (cons 'expr (cons 'expr stack)))]
 
-         [(list #\? 'expr) (parse-expr (cons 'if expr) tokens (cons 'expr (cons 'expr stack)))]
+         [(list #\? 'paren-expr) (parse-expr (cons 'if expr) tokens (cons 'expr (cons 'expr stack)))]
 
-         [(list #\λ 'expr)
+         [(list #\λ 'paren-expr)
           (let*-values ([(expr) (cons 'lambda expr)]
                         [(stack) (cons 'identifier (cons 'end-form (cons 'expr stack)))]
                         [(binding-form tokens stack) (parse-expr (list) tokens stack)])
             (parse-expr (cons binding-form expr) tokens stack))]
 
-         [(list #\≜ 'expr)
+         [(list #\≜ 'paren-expr)
           (let*-values ([(expr) (cons 'let expr)]
                         [(stack) (cons 'identifier (cons 'expr (cons 'end-form (cons 'expr stack))))]
                         [(binding-form tokens stack) (parse-expr (list) tokens stack)])
             (parse-expr (cons (list binding-form) expr) tokens stack))]
+
+         [(list _ 'paren-expr) (parse-expr expr (cons token tokens) (cons 'expr stack))]
 
          [(list _ 'end-form) (values (reverse expr) (cons token tokens) stack)]
 
