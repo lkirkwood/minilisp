@@ -12,6 +12,9 @@
 (define (identifier-token chars)
   (list->string (reverse chars)))
 
+(define-match-expander single-unicode-tokens
+  (lambda (stx) #'(or #\( #\) #\+ #\− #\× #\= #\? #\λ #\≜ #\Ω #\∷ #\← #\→ #\∅ #\∘ #\⊢ #\_)))
+
 (define (tokenise program-string)
   (let loop ([tokens (list)]
              [token-buf (list)]
@@ -25,7 +28,7 @@
 
         (let ([char (car chars)])
           (match char
-            [(or #\( #\) #\+ #\− #\× #\= #\? #\λ #\≜ #\Ω #\∷ #\← #\→ #\∅ #\∘ #\⊢ #\_)
+            [(single-unicode-tokens)
              (match buffered-type
                ['none (loop (cons char tokens) (list) 'none (cdr chars))]
                ['number
