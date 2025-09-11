@@ -41,7 +41,7 @@
                  (loop tokens (cons char token-buf) 'number (cdr chars))
                  (error (format "Found number in the middle of a ~a token" buffered-type)))]
 
-            [(? char-alphabetic?)
+            [(or (? char-alphabetic?) #\- #\_)
              (if (or (eq? buffered-type 'none) (eq? buffered-type 'identifier))
                  (loop tokens (cons char token-buf) 'identifier (cdr chars))
                  (error (format "Found alphanumeric character in the middle of a ~a token"
