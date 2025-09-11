@@ -37,6 +37,7 @@ paren-expr ::= '+' expr expr | '−' expr expr | '×' expr expr
 
 * Extension 1: Manual Recursion (Weeks 5-6)
 No new tokens
+
 Students manually define Y combinator as needed.
 
 ** Y Combinator Definition
