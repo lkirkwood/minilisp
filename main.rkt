@@ -39,12 +39,12 @@
             [(? char-numeric?)
              (if (or (eq? buffered-type 'none) (eq? buffered-type 'number))
                  (loop tokens (cons char token-buf) 'number (cdr chars))
-                 (raise (format "Found number in the middle of a ~a token" buffered-type)))]
+                 (error (format "Found number in the middle of a ~a token" buffered-type)))]
 
             [(? char-alphabetic?)
              (if (or (eq? buffered-type 'none) (eq? buffered-type 'identifier))
                  (loop tokens (cons char token-buf) 'identifier (cdr chars))
-                 (raise (format "Found alphanumeric character in the middle of a ~a token"
+                 (error (format "Found alphanumeric character in the middle of a ~a token"
                                 buffered-type)))]
 
             [(? char-whitespace?)
@@ -52,12 +52,17 @@
                ['none (loop tokens (list) 'none (cdr chars))]
                ['number (loop (cons (number-token token-buf) tokens) (list) 'none (cdr chars))]
                ['identifier
-                (loop (cons (identifier-token token-buf) tokens) (list) 'none (cdr chars))])])))))
+                (loop (cons (identifier-token token-buf) tokens) (list) 'none (cdr chars))])]
+
+            [else
+             (error (format "The program being parsed contains an invalid character \"~a\" (U+~a)"
+                            char
+                            (string-upcase (number->string (char->integer char) 16))))])))))
 
 (define (parse-expr expr tokens stack)
   (cond
     [(and (null? tokens) (eq? '$ (car stack))) (car expr)]
-    [(null? tokens) (raise "The program being parsed ended unexpectedly.")]
+    [(null? tokens) (error "The program being parsed ended unexpectedly.")]
 
     [else
      (let ([token (car tokens)]
@@ -96,7 +101,9 @@
          [(list _ 'end-form) (values (reverse expr) (cons token tokens) stack)]
 
          [(list #\) #\)) (values (reverse expr) tokens stack)]
-         [(list _ #\)) (parse-expr expr (cons token tokens) (cons 'expr (cons #\) stack)))]))]))
+         [(list _ #\)) (parse-expr expr (cons token tokens) (cons 'expr (cons #\) stack)))]
+
+         [else (error "Invalid program: found ~a when looking for a ~a" token symbol)]))]))
 
 (define (parse program-string)
   (parse-expr (list) (tokenise program-string) (list 'expr '$)))
