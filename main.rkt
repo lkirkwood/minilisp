@@ -137,7 +137,14 @@
     "(≜ Y (λ f ((λ x (f (λ v ((x x) v)))) (λ x (f (λ v ((x x) v))))))
       (≜ factorial (Y (λ f (λ n (? (= n 0) 1 (× n (f (− n 1)))))))
           (factorial 5)))")
-   120))
+   120)
+
+  (check-exn exn:fail? (lambda () (run "+ 42 53")))
+  (check-exn exn:fail? (lambda () (run "(+ 42 53 −)")))
+  (check-equal? (run "(+ 42 53)") 95)
+
+  (check-exn exn:fail? (lambda () (run "(? (= 42 0) 1 0 999)")))
+  (check-equal? (run "(? (= 42 0) 1 0)") 0))
 
 (module+ main
   ;; (Optional) main submodule. Put code here if you need it to be executed when
