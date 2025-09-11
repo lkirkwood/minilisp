@@ -25,7 +25,7 @@
 
         (let ([char (car chars)])
           (match char
-            [(or #\( #\) #\+ #\− #\× #\= #\? #\λ #\≜ #\Ω)
+            [(or #\( #\) #\+ #\− #\× #\= #\? #\λ #\≜ #\Ω #\∷ #\← #\→ #\∅ #\∘)
              (match buffered-type
                ['none (loop (cons char tokens) (list) 'none (cdr chars))]
                ['number
@@ -105,6 +105,14 @@
          [(list #\Ω 'paren-expr)
           (parse-expr (cons 'turing-combinator expr) tokens (cons 'expr stack))]
 
+         [(list #\∷ 'paren-expr)
+          (parse-expr (cons 'cons expr) tokens (cons 'expr (cons 'expr stack)))]
+         [(list #\← 'paren-expr) (parse-expr (cons 'car expr) tokens (cons 'expr stack))]
+         [(list #\→ 'paren-expr) (parse-expr (cons 'cdr expr) tokens (cons 'expr stack))]
+
+         [(list #\∅ 'expr) (parse-expr (cons '(list) expr) tokens stack)]
+         [(list #\∘ 'paren-expr) (parse-expr (cons 'null? expr) tokens (cons 'expr stack))]
+
          [(list _ 'paren-expr) (parse-expr expr (cons token tokens) (cons 'expr stack))]
 
          [(list _ 'end-form) (values (reverse expr) (cons token tokens) stack)]
@@ -168,7 +176,19 @@
     "(≜ factorial
         (Ω (λ f (λ n (? (= n 0) 1 (× n (f (− n 1)))))))
             (factorial 5))")
-   120))
+   120)
+
+  (check-equal? (run "(∷ 1 (∷ 2 (∷ 3 ∅)))") (list 1 2 3))
+  (check-equal? (run "(← (∷ 42 100))") 42)
+  (check-equal? (run "(→ (∷ 42 100))") 100)
+  (check-equal? (run "(∘ ∅)") #t)
+  (check-equal? (run "(∘ (∷ 1 ∅))") #f)
+  (check-equal?
+   (run
+    "(≜ length
+        (Ω (λ f (λ lst (? (∘ lst) 0 (+ 1 (f (→ lst)))))))
+            (length (∷ 1 (∷ 2 (∷ 3 ∅)))))")
+   3))
 
 (module+ main
   ;; (Optional) main submodule. Put code here if you need it to be executed when
