@@ -106,7 +106,7 @@
          [(list #\) #\)) (values (reverse expr) tokens stack)]
          [(list _ #\)) (parse-expr expr (cons token tokens) (cons 'expr (cons #\) stack)))]
 
-         [else (error "Invalid program: found ~a when looking for a ~a" token symbol)]))]))
+         [else (error (format "Found \"~a\" when looking for a \"~a\"" token symbol))]))]))
 
 (define (parse program-string)
   (parse-expr (list) (tokenise program-string) (list 'expr '$)))
