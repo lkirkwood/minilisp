@@ -111,7 +111,7 @@
          [(list #\← 'paren-expr) (parse-expr (cons 'car expr) tokens (push stack 'expr))]
          [(list #\→ 'paren-expr) (parse-expr (cons 'cdr expr) tokens (push stack 'expr))]
 
-         [(list #\∅ 'expr) (parse-expr (cons 'null expr) tokens stack)]
+         [(list #\∅ 'expr) (parse-expr (cons '(list) expr) tokens stack)]
          [(list #\∘ 'paren-expr) (parse-expr (cons 'null? expr) tokens (push stack 'expr))]
 
          [(list _ 'paren-expr) (parse-expr expr (cons token tokens) (push stack 'expr))]
