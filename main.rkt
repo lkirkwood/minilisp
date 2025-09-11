@@ -25,7 +25,7 @@
 
         (let ([char (car chars)])
           (match char
-            [(or #\( #\) #\+ #\− #\× #\= #\? #\λ #\≜)
+            [(or #\( #\) #\+ #\− #\× #\= #\? #\λ #\≜ #\Ω)
              (match buffered-type
                ['none (loop (cons char tokens) (list) 'none (cdr chars))]
                ['number
@@ -58,6 +58,9 @@
              (error (format "The program being parsed contains an invalid character \"~a\" (U+~a)"
                             char
                             (string-upcase (number->string (char->integer char) 16))))])))))
+
+(define (turing-combinator f)
+  ((lambda (x) (x x)) (lambda (g) (f (lambda (arg) ((g g) arg))))))
 
 (define (parse-expr expr tokens stack)
   (cond
@@ -99,6 +102,9 @@
                         [(binding-form tokens stack) (parse-expr (list) tokens stack)])
             (parse-expr (cons (list binding-form) expr) tokens stack))]
 
+         [(list #\Ω 'paren-expr)
+          (parse-expr (cons 'turing-combinator expr) tokens (cons 'expr stack))]
+
          [(list _ 'paren-expr) (parse-expr expr (cons token tokens) (cons 'expr stack))]
 
          [(list _ 'end-form) (values (reverse expr) (cons token tokens) stack)]
@@ -111,8 +117,11 @@
 (define (parse program-string)
   (parse-expr (list) (tokenise program-string) (list 'expr '$)))
 
+(define-namespace-anchor minilisp)
+(define minilisp-ns (namespace-anchor->namespace minilisp))
+
 (define (run program-string)
-  (eval (parse program-string) (make-base-namespace)))
+  (eval (parse program-string) minilisp-ns))
 
 (module+ test
   (require rackunit)
@@ -144,7 +153,22 @@
   (check-equal? (run "(+ 42 53)") 95)
 
   (check-exn exn:fail? (lambda () (run "(? (= 42 0) 1 0 999)")))
-  (check-equal? (run "(? (= 42 0) 1 0)") 0))
+  (check-equal? (run "(? (= 42 0) 1 0)") 0)
+
+  (define factorial
+    (turing-combinator (lambda (self)
+                         (lambda (n)
+                           (if (zero? n)
+                               1
+                               (* n (self (sub1 n))))))))
+
+  (check-equal? (factorial 5) 120)
+  (check-equal?
+   (run
+    "(≜ factorial
+        (Ω (λ f (λ n (? (= n 0) 1 (× n (f (− n 1)))))))
+            (factorial 5))")
+   120))
 
 (module+ main
   ;; (Optional) main submodule. Put code here if you need it to be executed when
