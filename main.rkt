@@ -25,7 +25,7 @@
 
         (let ([char (car chars)])
           (match char
-            [(or #\( #\) #\+ #\− #\× #\= #\? #\λ #\≜ #\Ω #\∷ #\← #\→ #\∅ #\∘)
+            [(or #\( #\) #\+ #\− #\× #\= #\? #\λ #\≜ #\Ω #\∷ #\← #\→ #\∅ #\∘ #\⊢ #\_)
              (match buffered-type
                ['none (loop (cons char tokens) (list) 'none (cdr chars))]
                ['number
@@ -81,8 +81,8 @@
                         [(sub-expr tokens stack) (parse-expr (list) tokens stack)])
             (parse-expr (cons sub-expr expr) tokens stack))]
 
-         [(list (? number? number) (or 'pattern 'expr)) (parse-expr (cons number expr) tokens stack)]
-         [(list (? string? identifier) (or 'pattern 'identifier 'expr))
+         [(list (? number? number) 'expr) (parse-expr (cons number expr) tokens stack)]
+         [(list (? string? identifier) (or 'identifier 'expr))
           (parse-expr (cons (string->symbol identifier) expr) tokens stack)]
 
          [(list #\+ 'paren-expr) (parse-expr (cons + expr) tokens (push stack 'expr 'expr))]
@@ -113,6 +113,16 @@
 
          [(list #\∅ 'expr) (parse-expr (cons '(list) expr) tokens stack)]
          [(list #\∘ 'paren-expr) (parse-expr (cons 'null? expr) tokens (push stack 'expr))]
+
+         [(list #\⊢ 'paren-expr)
+          (parse-expr (cons 'match expr) tokens (push stack 'expr 'match-clause))]
+         [(list #\( 'match-clause)
+          (let*-values ([(stack) (push stack 'expr 'expr 'end-form)]
+                        [(match-clause tokens stack) (parse-expr (list) tokens stack)])
+            (parse-expr (cons match-clause expr) tokens (push stack 'match-clause)))]
+         [(list #\) 'match-clause) (parse-expr expr tokens stack)]
+
+         [(list #\_ 'expr) (parse-expr (cons '_ expr) tokens stack)]
 
          [(list _ 'paren-expr) (parse-expr expr (cons token tokens) (push stack 'expr))]
 
@@ -184,12 +194,31 @@
   (check-equal? (run "(→ (∷ 42 100))") 100)
   (check-equal? (run "(∘ ∅)") #t)
   (check-equal? (run "(∘ (∷ 1 ∅))") #f)
+
   (check-equal?
    (run
     "(≜ length
         (Ω (λ f (λ lst (? (∘ lst) 0 (+ 1 (f (→ lst)))))))
             (length (∷ 1 (∷ 2 (∷ 3 ∅)))))")
-   3))
+   3)
+
+  (check-equal?
+   (run
+    "(≜ first-or-default
+        (λ lst (⊢ lst
+            (∅ 0)
+            ((∷ x _) x)))
+        (first-or-default (∷ 42 ∅)))")
+   42)
+
+  (check-equal?
+   (run
+    "(≜ sum
+        (Ω (λ f (λ lst (⊢ lst
+            (∅ 0)
+            ((∷ x xs) (+ x (f xs)))))))
+        (sum (∷ 1 (∷ 2 (∷ 3 ∅)))))")
+   6))
 
 (module+ main
   ;; (Optional) main submodule. Put code here if you need it to be executed when
