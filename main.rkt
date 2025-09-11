@@ -13,7 +13,8 @@
   (list->string (reverse chars)))
 
 (define-match-expander single-unicode-tokens
-  (lambda (stx) #'(or #\( #\) #\+ #\− #\× #\= #\? #\λ #\≜ #\Ω #\∷ #\← #\→ #\∅ #\∘ #\⊢ #\_)))
+  (lambda (stx)
+    #'(or #\( #\) #\+ #\− #\× #\= #\? #\λ #\≜ #\Ω #\∷ #\← #\→ #\∅ #\∘ #\⊢ #\_ #\‹ #\› #\∧ #\∨ #\¬)))
 
 (define (tokenise program-string)
   (let loop ([tokens (list)]
@@ -92,6 +93,11 @@
          [(list #\− 'paren-expr) (parse-expr (cons - expr) tokens (push stack 'expr 'expr))]
          [(list #\× 'paren-expr) (parse-expr (cons * expr) tokens (push stack 'expr 'expr))]
          [(list #\= 'paren-expr) (parse-expr (cons equal? expr) tokens (push stack 'expr 'expr))]
+         [(list #\‹ 'paren-expr) (parse-expr (cons < expr) tokens (push stack 'expr 'expr))]
+         [(list #\› 'paren-expr) (parse-expr (cons > expr) tokens (push stack 'expr 'expr))]
+         [(list #\∧ 'paren-expr) (parse-expr (cons 'and expr) tokens (push stack 'expr 'expr))]
+         [(list #\∨ 'paren-expr) (parse-expr (cons 'or expr) tokens (push stack 'expr 'expr))]
+         [(list #\¬ 'paren-expr) (parse-expr (cons not expr) tokens (push stack 'expr))]
 
          [(list #\? 'paren-expr) (parse-expr (cons 'if expr) tokens (push stack 'expr 'expr))]
 
@@ -221,7 +227,10 @@
             (∅ 0)
             ((∷ x xs) (+ x (f xs)))))))
         (sum (∷ 1 (∷ 2 (∷ 3 ∅)))))")
-   6))
+   6)
+  (check-equal? (run "(∧ (› 5 3) (‹ 2 4))") #t)
+  (check-equal? (run "(∨ (= 1 0) (› 10 5))") #t)
+  (check-equal? (run "(¬ (= 5 3))") #t))
 
 (module+ main
   ;; (Optional) main submodule. Put code here if you need it to be executed when
