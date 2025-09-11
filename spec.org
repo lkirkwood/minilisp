@@ -177,30 +177,30 @@ pattern ::= number | identifier | '_' | '∅'
 
 ** Common Teaching Points
 *** Truth Values
-False: 0
-True: Any non-zero number (conventionally 1)
++ False: 0
++ True: Any non-zero number (conventionally 1)
 
 *** Subtraction Behavior
 Natural number arithmetic: ~(− 3 5) → 0~ (not negative)
 
 *** Scoping Rules
-Lexical scoping: Variables bound where functions are defined
-Closures: Functions capture their defining environment
-Local binding only: ≜ creates local scope, no globals
++ Lexical scoping: Variables bound where functions are defined
++ Closures: Functions capture their defining environment
++ Local binding only: ≜ creates local scope, no globals
 
 *** Error Patterns to Watch For
-Unmatched parentheses
-Wrong number of arguments to operators
-Undefined variables
-Function application of non-functions
++ Unmatched parentheses
++ Wrong number of arguments to operators
++ Undefined variables
++ Function application of non-functions
 
 *** Evaluation Strategy
-Call-by-value: Arguments evaluated before function application
-Left-to-right: Expression evaluation order
++ Call-by-value: Arguments evaluated before function application
++ Left-to-right: Expression evaluation order
 
 ** Quick Syntax Reminders
-All operations are prefix: ~(+ 2 3)~ not 2 + 3
-All expressions are fully parenthesized: no precedence rules
-Application is left-associative: ~(f a b c)~ = ~(((f a) b) c)~
-Lambda bodies extend as far right as possible
-Let bindings have limited scope: ~(≜ x val body)~ - x only visible in body
++ All operations are prefix: ~(+ 2 3)~ not 2 + 3
++ All expressions are fully parenthesized: no precedence rules
++ Application is left-associative: ~(f a b c)~ = ~(((f a) b) c)~
++ Lambda bodies extend as far right as possible
++ Let bindings have limited scope: ~(≜ x val body)~ - x only visible in body
