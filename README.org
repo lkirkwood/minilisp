@@ -1,5 +1,38 @@
-#+title: minilisp
+* minilisp
 
 An "aggressively LL(1) parseable" LISP.
 
 Specification is [[./spec.org][here]].
+
+** Examples
+Factorial function.
+#+begin_src
+(≜ factorial
+    (Ω (λ f (λ n (? (= n 0) 1 (× n (f (− n 1)))))))
+        (factorial 5))
+#+end_src
+
+List length function.
+#+begin_src
+(≜ length
+    (Ω (λ f (λ lst (? (∘ lst) 0 (+ 1 (f (→ lst)))))))
+        (length (∷ 1 (∷ 2 (∷ 3 ∅)))))
+#+end_src
+
+Pattern matching.
+#+begin_src
+(≜ first-or-default
+    (λ lst (⊢ lst
+        (∅ 0)
+        ((∷ x _) x)))
+    (first-or-default (∷ 42 ∅)))
+#+end_src
+
+List sum function.
+#+begin_src
+(≜ sum
+    (Ω (λ f (λ lst (⊢ lst
+        (∅ 0)
+        ((∷ x xs) (+ x (f xs)))))))
+    (sum (∷ 1 (∷ 2 (∷ 3 ∅)))))
+#+end_src
