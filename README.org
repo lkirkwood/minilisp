@@ -9,14 +9,14 @@ Factorial function.
 #+begin_src
 (≜ factorial
     (Ω (λ f (λ n (? (= n 0) 1 (× n (f (− n 1)))))))
-        (factorial 5))
+    (factorial 5))
 #+end_src
 
 List length function.
 #+begin_src
 (≜ length
     (Ω (λ f (λ lst (? (∘ lst) 0 (+ 1 (f (→ lst)))))))
-        (length (∷ 1 (∷ 2 (∷ 3 ∅)))))
+    (length (∷ 1 (∷ 2 (∷ 3 ∅)))))
 #+end_src
 
 Pattern matching.

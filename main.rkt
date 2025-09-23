@@ -195,7 +195,7 @@
    (run
     "(≜ factorial
         (Ω (λ f (λ n (? (= n 0) 1 (× n (f (− n 1)))))))
-            (factorial 5))")
+        (factorial 5))")
    120)
 
   (check-equal? (run "(∷ 1 (∷ 2 (∷ 3 ∅)))") (list 1 2 3))
@@ -208,7 +208,7 @@
    (run
     "(≜ length
         (Ω (λ f (λ lst (? (∘ lst) 0 (+ 1 (f (→ lst)))))))
-            (length (∷ 1 (∷ 2 (∷ 3 ∅)))))")
+        (length (∷ 1 (∷ 2 (∷ 3 ∅)))))")
    3)
 
   (check-equal?
