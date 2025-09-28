@@ -16,47 +16,41 @@
   (lambda (stx)
     #'(or #\( #\) #\+ #\− #\× #\= #\? #\λ #\≜ #\Ω #\∷ #\← #\→ #\∅ #\∘ #\⊢ #\_ #\‹ #\› #\∧ #\∨ #\¬)))
 
+(define (flush-token-buf tokens buf buf-type)
+  (match buf-type
+    ['none tokens]
+    ['number (cons (number-token buf) tokens)]
+    ['identifier (cons (identifier-token buf) tokens)]))
+
 (define (tokenise program-string)
   (let loop ([tokens (list)]
              [token-buf (list)]
              [buffered-type 'none]
              [chars (string->list program-string)])
-    (if (null? chars)
-        (match buffered-type
-          ['none (reverse tokens)]
-          ['number (reverse (cons (number-token token-buf) tokens))]
-          ['identifier (reverse (cons (identifier-token token-buf) tokens))])
+    (define (push-token)
+      (flush-token-buf tokens token-buf buffered-type))
 
-        (let ([char (car chars)])
+    (if (null? chars)
+        (reverse (push-token))
+
+        (let ([char (car chars)]
+              [chars (cdr chars)])
+
           (match char
-            [(single-unicode-tokens)
-             (match buffered-type
-               ['none (loop (cons char tokens) (list) 'none (cdr chars))]
-               ['number
-                (loop (cons char (cons (number-token token-buf) tokens)) (list) 'none (cdr chars))]
-               ['identifier
-                (loop (cons char (cons (identifier-token token-buf) tokens))
-                      (list)
-                      'none
-                      (cdr chars))])]
+            [(single-unicode-tokens) (loop (cons char (push-token)) (list) 'none chars)]
 
             [(? char-numeric?)
              (if (or (eq? buffered-type 'none) (eq? buffered-type 'number))
-                 (loop tokens (cons char token-buf) 'number (cdr chars))
+                 (loop tokens (cons char token-buf) 'number chars)
                  (error (format "Found number in the middle of a ~a token" buffered-type)))]
 
             [(or (? char-alphabetic?) #\- #\_)
              (if (or (eq? buffered-type 'none) (eq? buffered-type 'identifier))
-                 (loop tokens (cons char token-buf) 'identifier (cdr chars))
+                 (loop tokens (cons char token-buf) 'identifier chars)
                  (error (format "Found alphanumeric character in the middle of a ~a token"
                                 buffered-type)))]
 
-            [(? char-whitespace?)
-             (match buffered-type
-               ['none (loop tokens (list) 'none (cdr chars))]
-               ['number (loop (cons (number-token token-buf) tokens) (list) 'none (cdr chars))]
-               ['identifier
-                (loop (cons (identifier-token token-buf) tokens) (list) 'none (cdr chars))])]
+            [(? char-whitespace?) (loop (push-token) (list) 'none chars)]
 
             [else
              (error (format "The program being parsed contains an invalid character \"~a\" (U+~a)"
@@ -192,8 +186,7 @@
 
   (check-equal? (factorial 5) 120)
   (check-equal?
-   (run
-    "(≜ factorial
+   (run "(≜ factorial
         (Ω (λ f (λ n (? (= n 0) 1 (× n (f (− n 1)))))))
         (factorial 5))")
    120)
