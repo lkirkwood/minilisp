@@ -12,9 +12,8 @@
 (define (identifier-token chars)
   (list->string (reverse chars)))
 
-(define-match-expander single-unicode-tokens
-  (lambda (stx)
-    #'(or #\( #\) #\+ #\− #\× #\= #\? #\λ #\≜ #\Ω #\∷ #\← #\→ #\∅ #\∘ #\⊢ #\_ #\‹ #\› #\∧ #\∨ #\¬)))
+(define SINGLE-UNICODE-TOKENS
+  (list #\( #\) #\+ #\− #\× #\= #\? #\λ #\≜ #\Ω #\∷ #\← #\→ #\∅ #\∘ #\⊢ #\_ #\‹ #\› #\∧ #\∨ #\¬))
 
 (define (flush-token-buf tokens buf buf-type)
   (match buf-type
@@ -37,7 +36,8 @@
               [chars (cdr chars)])
 
           (match char
-            [(single-unicode-tokens) (loop (cons char (push-token)) (list) 'none chars)]
+            [(? (lambda (ch) (member ch SINGLE-UNICODE-TOKENS)))
+             (loop (cons char (push-token)) (list) 'none chars)]
 
             [(? char-numeric?)
              (if (or (eq? buffered-type 'none) (eq? buffered-type 'number))
