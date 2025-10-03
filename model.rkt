@@ -1,6 +1,8 @@
 #lang racket
 
 (define TERMINAL-CHARS
-  (list #\( #\) #\+ #\− #\× #\= #\? #\λ #\≜ #\Ω #\∷ #\← #\→ #\∅ #\∘ #\⊢ #\_ #\‹ #\› #\∧ #\∨ #\¬))
+  (list #\+ #\− #\× #\= #\? #\λ #\≜ #\Ω #\∷ #\← #\→ #\∅ #\∘ #\⊢ #\_ #\‹ #\› #\∧ #\∨ #\¬))
 
-(provide TERMINAL-CHARS)
+(define SINGLE-CHAR-TOKENS (append TERMINAL-CHARS (list #\( #\))))
+(provide TERMINAL-CHARS
+         SINGLE-CHAR-TOKENS)

@@ -35,7 +35,7 @@
               [chars (cdr chars)])
 
           (match char
-            [(? (lambda (ch) (member ch TERMINAL-CHARS)))
+            [(? (lambda (ch) (member ch SINGLE-CHAR-TOKENS)))
              (loop (cons char (push-token)) (list) 'none chars)]
 
             [(? char-numeric?)
