@@ -1,5 +1,7 @@
 #lang racket
 
+(require "model.rkt")
+
 (define (number-token chars)
   (define-values (total _)
     (for/fold ([total 0]
@@ -11,10 +13,6 @@
 
 (define (identifier-token chars)
   (list->string (reverse chars)))
-
-(define-match-expander single-unicode-tokens
-  (lambda (stx)
-    #'(or #\( #\) #\+ #\− #\× #\= #\? #\λ #\≜ #\Ω #\∷ #\← #\→ #\∅ #\∘ #\⊢ #\_ #\‹ #\› #\∧ #\∨ #\¬)))
 
 (define (flush-token-buf tokens buf buf-type)
   (match buf-type
@@ -37,7 +35,8 @@
               [chars (cdr chars)])
 
           (match char
-            [(single-unicode-tokens) (loop (cons char (push-token)) (list) 'none chars)]
+            [(? (lambda (ch) (member ch SINGLE-CHAR-TOKENS)))
+             (loop (cons char (push-token)) (list) 'none chars)]
 
             [(? char-numeric?)
              (if (or (eq? buffered-type 'none) (eq? buffered-type 'number))
@@ -52,7 +51,7 @@
 
             [(? char-whitespace?) (loop (push-token) (list) 'none chars)]
 
-            [else
+            [_
              (error (format "The program being parsed contains an invalid character \"~a\" (U+~a)"
                             char
                             (string-upcase (number->string (char->integer char) 16))))])))))
@@ -153,6 +152,7 @@
                 (list #\( #\+ #\( #\× 1 42 #\) #\( #\− 42 0 #\) #\)))
   (check-equal? (tokenise "(≜ myident (× 42 100))") (list #\( #\≜ "myident" #\( #\× 42 100 #\) #\)))
   (check-equal? (tokenise "42") (list 42))
+  (check-exn exn:fail? (lambda () (tokenise "(⌒)")))
 
   (check-equal? (run "42") 42)
   (check-equal? (run "(+ 1 42)") 43)
