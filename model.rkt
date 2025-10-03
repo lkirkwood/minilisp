@@ -1,8 +1,119 @@
 #lang racket
 
-(define TERMINAL-CHARS
+(define TERMINAL-TOKENS
   (list #\+ #\− #\× #\= #\? #\λ #\≜ #\Ω #\∷ #\← #\→ #\∅ #\∘ #\⊢ #\_ #\‹ #\› #\∧ #\∨ #\¬))
 
-(define SINGLE-CHAR-TOKENS (append TERMINAL-CHARS (list #\( #\))))
-(provide TERMINAL-CHARS
-         SINGLE-CHAR-TOKENS)
+(define (terminal-token? v)
+  (member v TERMINAL-TOKENS))
+
+(define SINGLE-CHAR-TOKENS (append TERMINAL-TOKENS (list #\( #\))))
+
+(define (single-char-token? v)
+  (member v SINGLE-CHAR-TOKENS))
+
+(define PAREN-EXPR-TOKEN-SYMBOL-MAP
+  (hash #\+
+        '(expr expr)
+        #\−
+        '(expr expr)
+        #\×
+        '(expr expr)
+        #\‹
+        '(expr expr)
+        #\›
+        '(expr expr)
+        #\=
+        '(expr expr)
+        #\=
+        '(expr expr)
+        ;; control flow
+        #\?
+        '(expr expr expr)
+        #\λ
+        '(identifier expr)
+        #\≜
+        '(identifier expr expr)
+        #\Ω
+        '(expr)
+        ;; lists
+        #\∷
+        '(expr expr)
+        #\←
+        '(expr)
+        #\→
+        '(expr)
+        #\∘
+        '(expr)
+        ;; logic
+        #\∧
+        '(expr expr)
+        #\∨
+        '(expr expr)
+        #\¬
+        '(expr)
+        ;; pattern matching
+        #\⊢
+        '(expr match-clause)))
+
+(define (paren-expr-symbol token)
+  (hash-ref PAREN-EXPR-TOKEN-SYMBOL-MAP token))
+
+(define PAREN-EXPR-TOKEN-LITERAL-MAP
+  (hash #\+
+        +
+        ;;----;;
+        #\−
+        -
+        ;;----;;
+        #\×
+        *
+        ;;----;;
+        #\=
+        equal?
+        ;;----;;
+        #\?
+        'if
+        ;;----;;
+        #\‹
+        <
+        ;;----;;
+        #\›
+        >
+        ;;----;;
+        #\∧
+        'and
+        ;;----;;
+        #\∨
+        'or
+        ;;----;;
+        #\¬
+        not
+        ;;----;;
+        #\Ω
+        'turing-combinator
+        ;;----;;
+        #\∷
+        'cons
+        ;;----;;
+        #\←
+        'car
+        ;;----;;
+        #\→
+        'cdr
+        ;;----;;
+        #\∅
+        '(list)
+        ;;----;;
+        #\∘
+        'null?
+        ;;----;;
+        #\⊢
+        'match))
+
+(define (paren-expr-literal token)
+  (hash-ref PAREN-EXPR-TOKEN-LITERAL-MAP token))
+
+(provide terminal-token?
+         single-char-token?
+         paren-expr-symbol
+         paren-expr-literal)

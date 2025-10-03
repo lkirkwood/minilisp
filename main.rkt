@@ -35,8 +35,7 @@
               [chars (cdr chars)])
 
           (match char
-            [(? (lambda (ch) (member ch SINGLE-CHAR-TOKENS)))
-             (loop (cons char (push-token)) (list) 'none chars)]
+            [(? single-char-token?) (loop (cons char (push-token)) (list) 'none chars)]
 
             [(? char-numeric?)
              (if (or (eq? buffered-type 'none) (eq? buffered-type 'number))
@@ -73,26 +72,20 @@
            [symbol (car stack)]
            [stack (cdr stack)])
        (match (list token symbol)
-         [(list #\( 'expr)
-          (let*-values ([(stack) (cons 'paren-expr (cons #\) stack))]
-                        [(sub-expr tokens stack) (parse-expr (list) tokens stack)])
-            (parse-expr (cons sub-expr expr) tokens stack))]
 
+         ;; simple expressions
          [(list (? number? number) 'expr) (parse-expr (cons number expr) tokens stack)]
+
          [(list (? string? identifier) (or 'identifier 'expr))
           (parse-expr (cons (string->symbol identifier) expr) tokens stack)]
 
-         [(list #\+ 'paren-expr) (parse-expr (cons + expr) tokens (push stack 'expr 'expr))]
-         [(list #\− 'paren-expr) (parse-expr (cons - expr) tokens (push stack 'expr 'expr))]
-         [(list #\× 'paren-expr) (parse-expr (cons * expr) tokens (push stack 'expr 'expr))]
-         [(list #\= 'paren-expr) (parse-expr (cons equal? expr) tokens (push stack 'expr 'expr))]
-         [(list #\‹ 'paren-expr) (parse-expr (cons < expr) tokens (push stack 'expr 'expr))]
-         [(list #\› 'paren-expr) (parse-expr (cons > expr) tokens (push stack 'expr 'expr))]
-         [(list #\∧ 'paren-expr) (parse-expr (cons 'and expr) tokens (push stack 'expr 'expr))]
-         [(list #\∨ 'paren-expr) (parse-expr (cons 'or expr) tokens (push stack 'expr 'expr))]
-         [(list #\¬ 'paren-expr) (parse-expr (cons not expr) tokens (push stack 'expr))]
+         [(list #\∅ 'expr) (parse-expr (cons '(list) expr) tokens stack)]
 
-         [(list #\? 'paren-expr) (parse-expr (cons 'if expr) tokens (push stack 'expr 'expr))]
+         ;; creating and exiting inner scopes
+         [(list #\( 'expr)
+          (let*-values ([(stack) (push stack 'paren-expr #\))]
+                        [(sub-expr tokens stack) (parse-expr (list) tokens stack)])
+            (parse-expr (cons sub-expr expr) tokens stack))]
 
          [(list #\λ 'paren-expr)
           (let*-values ([(expr) (cons 'lambda expr)]
@@ -106,33 +99,31 @@
                         [(binding-form tokens stack) (parse-expr (list) tokens stack)])
             (parse-expr (cons (list binding-form) expr) tokens stack))]
 
-         [(list #\Ω 'paren-expr)
-          (parse-expr (cons 'turing-combinator expr) tokens (push stack 'expr))]
+         [(list _ 'end-form) (values (reverse expr) (cons token tokens) stack)]
 
-         [(list #\∷ 'paren-expr) (parse-expr (cons 'cons expr) tokens (push stack 'expr 'expr))]
-         [(list #\← 'paren-expr) (parse-expr (cons 'car expr) tokens (push stack 'expr))]
-         [(list #\→ 'paren-expr) (parse-expr (cons 'cdr expr) tokens (push stack 'expr))]
+         ;; paren expressions
+         [(list (? terminal-token?) 'paren-expr)
+          (parse-expr (cons (paren-expr-literal token) expr)
+                      tokens
+                      (apply push stack (paren-expr-symbol token)))]
 
-         [(list #\∅ 'expr) (parse-expr (cons '(list) expr) tokens stack)]
-         [(list #\∘ 'paren-expr) (parse-expr (cons 'null? expr) tokens (push stack 'expr))]
+         [(list _ 'paren-expr) (parse-expr expr (cons token tokens) (push stack 'expr))]
 
-         [(list #\⊢ 'paren-expr)
-          (parse-expr (cons 'match expr) tokens (push stack 'expr 'match-clause))]
+         ;; closing parens
+         [(list #\) #\)) (values (reverse expr) tokens stack)]
+         [(list _ #\)) (parse-expr expr (cons token tokens) (push stack 'expr #\)))]
+
+         ;; pattern matching
          [(list #\( 'match-clause)
           (let*-values ([(stack) (push stack 'expr 'expr 'end-form)]
                         [(match-clause tokens stack) (parse-expr (list) tokens stack)])
             (parse-expr (cons match-clause expr) tokens (push stack 'match-clause)))]
+
          [(list #\) 'match-clause) (parse-expr expr tokens stack)]
 
          [(list #\_ 'expr) (parse-expr (cons '_ expr) tokens stack)]
 
-         [(list _ 'paren-expr) (parse-expr expr (cons token tokens) (push stack 'expr))]
-
-         [(list _ 'end-form) (values (reverse expr) (cons token tokens) stack)]
-
-         [(list #\) #\)) (values (reverse expr) tokens stack)]
-         [(list _ #\)) (parse-expr expr (cons token tokens) (push stack 'expr #\)))]
-
+         ;; something went wrong
          [_ (error (format "Found \"~a\" when looking for a \"~a\"" token symbol))]))]))
 
 (define (parse program-string)
