@@ -133,7 +133,7 @@
          [(list #\) #\)) (values (reverse expr) tokens stack)]
          [(list _ #\)) (parse-expr expr (cons token tokens) (push stack 'expr #\)))]
 
-         [else (error (format "Found \"~a\" when looking for a \"~a\"" token symbol))]))]))
+         [_ (error (format "Found \"~a\" when looking for a \"~a\"" token symbol))]))]))
 
 (define (parse program-string)
   (parse-expr (list) (tokenise program-string) (list 'expr '$)))
