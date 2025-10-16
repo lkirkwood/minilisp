@@ -6,6 +6,14 @@
 (define (single-char-token? v)
   (member v SINGLE-CHAR-TOKENS))
 
+(define TERMINAL-EXPR-TOKEN-LITERAL-MAP (hash #\∅ '(list) #\_ '_))
+
+(define (terminal-expr-token? v)
+  (hash-has-key? TERMINAL-EXPR-TOKEN-LITERAL-MAP v))
+
+(define (terminal-expr-literal token)
+  (hash-ref TERMINAL-EXPR-TOKEN-LITERAL-MAP token))
+
 (define PAREN-EXPR-TOKEN-SYMBOL-MAP
   (hash #\+
         '(expr expr)
@@ -114,9 +122,12 @@
   (hash-has-key? PAREN-EXPR-TOKEN-LITERAL-MAP v))
 
 (provide SINGLE-CHAR-TOKENS
+         TERMINAL-EXPR-TOKEN-LITERAL-MAP
          PAREN-EXPR-TOKEN-SYMBOL-MAP
          PAREN-EXPR-TOKEN-LITERAL-MAP
          single-char-token?
+         terminal-expr-literal
+         terminal-expr-token?
          paren-expr-symbol
          paren-expr-literal
          paren-expr-token?)
