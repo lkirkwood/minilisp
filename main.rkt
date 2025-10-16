@@ -102,7 +102,7 @@
          [(list _ 'end-form) (values (reverse expr) (cons token tokens) stack)]
 
          ;; paren expressions
-         [(list (? terminal-token?) 'paren-expr)
+         [(list (? paren-expr-token?) 'paren-expr)
           (parse-expr (cons (paren-expr-literal token) expr)
                       tokens
                       (apply push stack (paren-expr-symbol token)))]
