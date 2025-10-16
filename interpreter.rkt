@@ -173,9 +173,18 @@
 
   (check-equal? (factorial 5) 120)
   (check-equal?
-   (run "(≜ factorial
-        (Ω (λ f (λ n (? (= n 0) 1 (× n (f (− n 1)))))))
-        (factorial 5))")
+   (run
+    "(≜ factorial
+            (Ω (λ f (λ n (? (= n 0) 1 (× n (f (− n 1)))))))
+            (factorial 5))")
+   120)
+
+  (check-equal?
+   (run
+    "(≜ factorial-proc
+        (λ f (λ n (? (= n 0) 1 (× n (f (− n 1))))))
+        (≜ factorial (Ω factorial-proc)
+            (factorial 5)))")
    120)
 
   (check-equal? (run "(∷ 1 (∷ 2 (∷ 3 ∅)))") (list 1 2 3))
