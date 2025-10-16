@@ -79,7 +79,8 @@
          [(list (? string? identifier) (or 'identifier 'expr))
           (parse-expr (cons (string->symbol identifier) expr) tokens stack)]
 
-         [(list #\∅ 'expr) (parse-expr (cons '(list) expr) tokens stack)]
+         [(list (? terminal-expr-token?) 'expr)
+          (parse-expr (cons (terminal-expr-literal token) expr) tokens stack)]
 
          ;; creating and exiting inner scopes
          [(list #\( 'expr)
@@ -101,17 +102,13 @@
 
          [(list _ 'end-form) (values (reverse expr) (cons token tokens) stack)]
 
-         ;; paren expressions
+         ;; simple paren expressions
          [(list (? paren-expr-token?) 'paren-expr)
           (parse-expr (cons (paren-expr-literal token) expr)
                       tokens
                       (apply push stack (paren-expr-symbol token)))]
 
          [(list _ 'paren-expr) (parse-expr expr (cons token tokens) (push stack 'expr))]
-
-         ;; closing parens
-         [(list #\) #\)) (values (reverse expr) tokens stack)]
-         [(list _ #\)) (parse-expr expr (cons token tokens) (push stack 'expr #\)))]
 
          ;; pattern matching
          [(list #\( 'match-clause)
@@ -121,7 +118,9 @@
 
          [(list #\) 'match-clause) (parse-expr expr tokens stack)]
 
-         [(list #\_ 'expr) (parse-expr (cons '_ expr) tokens stack)]
+         ;; closing parens
+         [(list #\) #\)) (values (reverse expr) tokens stack)]
+         [(list _ #\)) (parse-expr expr (cons token tokens) (push stack 'expr #\)))]
 
          ;; something went wrong
          [_ (error (format "Found \"~a\" when looking for a \"~a\"" token symbol))]))]))
