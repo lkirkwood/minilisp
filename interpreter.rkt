@@ -58,9 +58,6 @@
 (define (turing-combinator f)
   ((lambda (x) (x x)) (lambda (g) (f (lambda (arg) ((g g) arg))))))
 
-(define (push stack . elements)
-  (append elements stack))
-
 (define (parse-expr expr tokens stack)
   (cond
     [(and (null? tokens) (eq? '$ (car stack))) (car expr)]

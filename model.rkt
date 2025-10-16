@@ -1,4 +1,8 @@
 #lang racket
+
+(define (push stack . elements)
+  (append elements stack))
+
 (define TERMINAL-EXPR-TOKEN-LITERAL-MAP (hash #\∅ '(list) #\_ '_))
 
 (define (terminal-expr-token? v)
@@ -122,7 +126,8 @@
 (define (single-char-token? v)
   (member v SINGLE-CHAR-TOKENS))
 
-(provide TERMINAL-EXPR-TOKEN-LITERAL-MAP
+(provide push
+         TERMINAL-EXPR-TOKEN-LITERAL-MAP
          PAREN-EXPR-TOKEN-SYMBOL-MAP
          PAREN-EXPR-TOKEN-LITERAL-MAP
          PAREN-EXPR-TOKENS
